@@ -8,25 +8,15 @@
 </head>
 <body>
 
-    <!-- Contenedor de Autenticación -->
-    <div id="auth-container">
-        <div id="user-info" style="display: none;">
-            <img id="user-photo" src="" alt="User Photo">
-            <span id="user-name"></span>
-            <button id="logout-btn">Cerrar Sesión</button>
-        </div>
-        <button id="login-btn" style="display: none;">Iniciar Sesión con Google</button>
-    </div>
-
-    <!-- Pantalla de Selección de Departamento -->
-    <div id="dashboard-view" class="view">
+    <!-- Pantalla de Selección de Departamento (siempre visible al inicio) -->
+    <div id="dashboard-view" class="view active">
         <div class="container">
             <h1>Selecciona tu Departamento</h1>
             <div id="departments-grid"></div>
         </div>
     </div>
 
-    <!-- Pantalla de Tareas -->
+    <!-- Pantalla de Tareas (se muestra al seleccionar un depto) -->
     <div id="tasks-view" class="view">
         <div class="container">
             <header>
@@ -52,7 +42,6 @@
     <!-- Scripts de Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
     
     <!-- Librería SortableJS para Drag & Drop -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
