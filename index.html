@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Tareas</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Contenedor de Autenticación -->
+    <div id="auth-container">
+        <div id="user-info" style="display: none;">
+            <img id="user-photo" src="" alt="User Photo">
+            <span id="user-name"></span>
+            <button id="logout-btn">Cerrar Sesión</button>
+        </div>
+        <button id="login-btn" style="display: none;">Iniciar Sesión con Google</button>
+    </div>
+
+    <!-- Pantalla de Selección de Departamento -->
+    <div id="dashboard-view" class="view">
+        <div class="container">
+            <h1>Selecciona tu Departamento</h1>
+            <div id="departments-grid"></div>
+        </div>
+    </div>
+
+    <!-- Pantalla de Tareas -->
+    <div id="tasks-view" class="view">
+        <div class="container">
+            <header>
+                <button id="back-to-dashboard" title="Volver al dashboard">←</button>
+                <h1 id="department-title"></h1>
+            </header>
+
+            <div class="toolbar">
+                <input id="tName" placeholder="Añadir una nueva tarea..." style="flex:1">
+                <div class="urgent-wrapper">
+                    <input type="checkbox" id="tUrgent" title="Marcar como urgente">
+                    <label for="tUrgent">🔥</label>
+                </div>
+                <button id="add-task-btn">Añadir</button>
+            </div>
+
+            <div class="list" id="task-list">
+                <!-- Las tareas se renderizarán aquí -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts de Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    
+    <!-- Librería SortableJS para Drag & Drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    
+    <!-- Tu Script -->
+    <script src="script.js"></script>
+</body>
+</html>

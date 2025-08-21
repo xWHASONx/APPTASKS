@@ -1,0 +1,85 @@
+:root {
+    --primary-color: #007bff;
+    --danger-color: #e53e3e;
+    --urgent-bg: #fff5f5;
+    --urgent-border: #e53e3e;
+    --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --border-radius: 12px;
+    --shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+body {
+    font-family: var(--font-family);
+    margin: 0;
+    background: #f0f2f5;
+    color: #1c1e21;
+}
+
+.container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+}
+
+h1 { text-align: center; }
+
+/* Vistas */
+.view { display: none; }
+.view.active { display: block; }
+
+/* Autenticación */
+#auth-container {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+}
+#user-info { display: flex; align-items: center; gap: 10px; background: #fff; padding: 5px 10px; border-radius: 20px; box-shadow: var(--shadow); }
+#user-photo { width: 30px; height: 30px; border-radius: 50%; }
+#login-btn, #logout-btn { border: none; background: var(--primary-color); color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; }
+
+/* Dashboard */
+#departments-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+.dept-card { background: #fff; padding: 25px; border-radius: var(--border-radius); box-shadow: var(--shadow); cursor: pointer; text-align: center; transition: transform 0.2s, box-shadow 0.2s; }
+.dept-card:hover { transform: translateY(-5px); box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
+.card-icon { font-size: 2.5rem; }
+.card-name { font-size: 1.1rem; font-weight: 600; margin-top: 15px; }
+
+/* Tareas */
+header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+header h1 { margin: 0; flex-grow: 1; }
+#back-to-dashboard { background: none; border: 1px solid #ccc; font-size: 1.5rem; line-height: 1; border-radius: 8px; padding: 5px 10px; cursor: pointer; }
+
+.toolbar { display: flex; gap: 8px; margin-bottom: 20px; }
+.toolbar input[type="text"] { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; }
+.toolbar button { padding: 12px 20px; border: none; background: var(--primary-color); color: white; border-radius: 8px; cursor: pointer; font-weight: bold; }
+
+.urgent-wrapper { display: flex; align-items: center; padding: 0 10px; background-color: #fff; border: 1px solid #ccc; border-radius: 8px; }
+.urgent-wrapper label { font-size: 1.5em; cursor: pointer; filter: grayscale(100%); transition: all 0.2s; }
+#tUrgent { display: none; }
+#tUrgent:checked + label { filter: grayscale(0%); transform: scale(1.1); }
+
+/* Lista de Tareas */
+.list { border-radius: var(--border-radius); overflow: hidden; box-shadow: var(--shadow); }
+.task-item { display: grid; grid-template-columns: auto 1fr auto; gap: 15px; align-items: center; padding: 15px; background: #fff; border-bottom: 1px solid #eee; cursor: grab; transition: background-color 0.3s; }
+.task-item:last-child { border-bottom: none; }
+.task-item.done .task-details { text-decoration: line-through; opacity: 0.5; }
+.task-item.urgent { background-color: var(--urgent-bg); border-left: 4px solid var(--urgent-border); }
+
+.task-details { display: flex; flex-direction: column; }
+.task-name { font-weight: 600; }
+.task-meta { display: flex; align-items: center; gap: 8px; font-size: 0.8em; color: #999; margin-top: 5px; }
+.urgent-icon { color: var(--danger-color); font-size: 1.2em; }
+.task-creator { display: flex; align-items: center; gap: 4px; }
+.creator-photo { width: 16px; height: 16px; border-radius: 50%; }
+
+.task-actions { display: flex; gap: 8px; }
+.task-actions button { background: none; border: none; padding: 5px; cursor: pointer; opacity: 0.6; transition: opacity 0.2s; }
+.task-actions button:hover { opacity: 1; }
+.task-actions img { width: 18px; height: 18px; }
+
+/* Animaciones y Drag&Drop */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+.task-item { animation: fadeIn 0.4s ease-out; }
+.sortable-ghost { opacity: 0.4; background: #c8ebfb; }
