@@ -1,17 +1,24 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- CONFIGURACIÓN DE FIREBASE ---
-    const firebaseConfig = {
-        apiKey: "AIzaSy...",
-        authDomain: "tu-proyecto.firebaseapp.com",
-        projectId: "tu-proyecto",
-        storageBucket: "tu-proyecto.appspot.com",
-        messagingSenderId: "...",
-        appId: "..."
-    };
+// Pega aquí el objeto de configuración que obtuviste de Firebase.
+// ESTE ES EL PASO MÁS IMPORTANTE PARA QUE LAS TAREAS SE GUARDEN.
+const firebaseConfig = {
+    apiKey: "AIzaSyBqqizi9eXaXUNdVL1q_Kj2DujNrEiEB1k",
+    authDomain: "gestor-tareas-2ebb7.firebaseapp.com",
+    projectId: "gestor-tareas-2ebb7",
+    storageBucket: "gestor-tareas-2ebb7.appspot.com",
+    messagingSenderId: "286011187131",
+    appId: "1:286011187131:web:913814964077b3b3dc6e9e"
+};
 
     // --- INICIALIZACIÓN DE SERVICIOS ---
-    firebase.initializeApp(firebaseConfig);
+    try {
+        firebase.initializeApp(firebaseConfig);
+    } catch (e) {
+        console.error("Error al inicializar Firebase. ¿Pegaste bien tu 'firebaseConfig'?", e);
+        alert("Error de configuración de Firebase. Revisa la consola.");
+    }
     const db = firebase.firestore();
 
     // --- ESTADO GLOBAL DE LA APP ---
@@ -20,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let unsubscribe = null;
     const notificationSound = new Audio('notification.mp3');
     let isFirstLoad = true;
+    let currentFilter = 'pending'; // 'pending' o 'completed'
 
     // --- ELEMENTOS DEL DOM ---
     const dashboardView = document.getElementById('dashboard-view');
@@ -29,9 +37,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const departmentTitle = document.getElementById('department-title');
     const addTaskBtn = document.getElementById('add-task-btn');
     const tNameInput = document.getElementById('tName');
+    const tDescInput = document.getElementById('tDesc'); // Nuevo campo de descripción
     const tUrgentCheckbox = document.getElementById('tUrgent');
     const backBtn = document.getElementById('back-to-dashboard');
-
+    const filterBar = document.querySelector('.filter-bar');
+    // Modal de edición
+    const editModal = document.getElementById('edit-modal');
+    const editTaskId = document.getElementById('edit-task-id');
+    const editTaskName = document.getElementById('edit-task-name');
+    const editTaskDesc = document.getElementById('edit-task-desc');
+    const saveEditBtn = document.getElementById('save-edit-btn');
+    const cancelEditBtn = document.getElementById('cancel-edit-btn');
+    
     // --- LÓGICA DE NAVEGACIÓN ---
     function showDashboard() {
         dashboardView.classList.add('active');
@@ -58,55 +75,61 @@ document.addEventListener('DOMContentLoaded', () => {
         unsubscribe = db.collection(collectionName).orderBy('orden', 'desc')
             .onSnapshot(snapshot => {
                 if (!isFirstLoad) {
-                    notificationSound.play().catch(e => console.log("El usuario debe interactuar con la página para reproducir sonido."));
+                    notificationSound.play().catch(e => {});
                 }
                 isFirstLoad = false;
                 
-                const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderTasks(tasks);
-            }, error => {
-                console.error("Error al escuchar tareas: ", error);
-            });
+                const allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderTasks(allTasks); // Renderizamos con el filtro actual
+            }, error => console.error("Error al escuchar tareas: ", error));
     }
 
     addTaskBtn.addEventListener('click', () => {
         const name = tNameInput.value.trim();
+        const description = tDescInput.value.trim();
         const isUrgent = tUrgentCheckbox.checked;
-        if (!name) return;
+        if (!name) { alert('El nombre de la tarea es obligatorio.'); return; }
 
         db.collection(`tasks_${currentDepartment.toUpperCase()}`).add({
             name: name,
+            description: description,
             done: false,
             urgent: isUrgent,
             orden: Date.now(),
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         tNameInput.value = '';
+        tDescInput.value = '';
         tUrgentCheckbox.checked = false;
     });
+    
+    // --- LÓGICA DE TAREAS (EDICIÓN, ELIMINACIÓN, ETC) ---
+    function openEditModal(task) {
+        editTaskId.value = task.id;
+        editTaskName.value = task.name;
+        editTaskDesc.value = task.description || '';
+        editModal.style.display = 'flex';
+    }
 
-    // --- LÓGICA DE TAREAS INDIVIDUALES (delegación de eventos) ---
-    taskList.addEventListener('click', e => {
-        const taskItem = e.target.closest('.task-item');
-        if (!taskItem) return;
-        const id = taskItem.dataset.id;
+    function closeEditModal() {
+        editModal.style.display = 'none';
+    }
+
+    saveEditBtn.addEventListener('click', () => {
+        const id = editTaskId.value;
+        const newName = editTaskName.value.trim();
+        const newDesc = editTaskDesc.value.trim();
+        if (!newName) { alert('El nombre no puede estar vacío.'); return; }
+
         const collectionName = `tasks_${currentDepartment.toUpperCase()}`;
-        const taskDoc = db.collection(collectionName).doc(id);
-
-        if (e.target.matches('.toggle-status')) {
-            taskDoc.get().then(doc => {
-                if (doc.exists) taskDoc.update({ done: !doc.data().done });
-            });
-        }
-        if (e.target.matches('.delete-btn')) {
-            if (confirm('¿Eliminar esta tarea?')) taskDoc.delete();
-        }
-        if (e.target.matches('.urgent-btn')) {
-             taskDoc.get().then(doc => {
-                if (doc.exists) taskDoc.update({ urgent: !doc.data().urgent });
-            });
-        }
+        db.collection(collectionName).doc(id).update({
+            name: newName,
+            description: newDesc
+        });
+        closeEditModal();
     });
+    
+    cancelEditBtn.addEventListener('click', closeEditModal);
 
     // --- LÓGICA DE DRAG & DROP ---
     function saveOrder() {
@@ -124,43 +147,60 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     new Sortable(taskList, {
-        animation: 150,
-        handle: '.task-item',
-        ghostClass: 'sortable-ghost',
-        onEnd: saveOrder
+        animation: 150, handle: '.task-item', ghostClass: 'sortable-ghost', onEnd: saveOrder
     });
 
     // --- RENDERIZADO ---
-    function renderTasks(tasks) {
+    function renderTasks(allTasks) {
         taskList.innerHTML = '';
-        if (tasks.length === 0) {
-            taskList.innerHTML = '<div class="no-tasks">🎉 No hay tareas pendientes.</div>';
+        const filteredTasks = allTasks.filter(task => {
+            if (currentFilter === 'pending') return !task.done;
+            if (currentFilter === 'completed') return task.done;
+            return true;
+        });
+
+        if (filteredTasks.length === 0) {
+            taskList.innerHTML = `<div class="no-tasks">🎉 No hay tareas en esta vista.</div>`;
             return;
         }
-        tasks.forEach(task => {
+
+        filteredTasks.forEach(task => {
             const item = document.createElement('div');
             item.className = 'task-item';
             if (task.done) item.classList.add('done');
             if (task.urgent) item.classList.add('urgent');
             item.dataset.id = task.id;
 
-            const urgentIcon = task.urgent ? '<span class="urgent-icon" title="¡Urgente!">🔥</span>' : '';
+            const urgentIcon = task.urgent ? `<span class="urgent-icon" title="¡Urgente!">🔥</span>` : '';
             const createdAt = task.createdAt ? new Date(task.createdAt.seconds * 1000).toLocaleDateString() : '';
 
             item.innerHTML = `
                 <input type="checkbox" class="toggle-status" ${task.done ? 'checked' : ''}>
                 <div class="task-details">
                     <div class="task-name">${task.name}</div>
+                    <div class="task-desc">${task.description || ''}</div>
                     <div class="task-meta">
                         <span>${createdAt}</span>
                         ${urgentIcon}
                     </div>
                 </div>
                 <div class="task-actions">
-                    <button class="urgent-btn" title="Marcar como urgente">🚨</button>
+                    <button class="edit-btn" title="Editar tarea">✏️</button>
                     <button class="delete-btn" title="Eliminar tarea">🗑️</button>
                 </div>
             `;
+
+            // Event Listeners para los botones de cada tarea
+            item.querySelector('.toggle-status').addEventListener('change', () => {
+                db.collection(`tasks_${currentDepartment.toUpperCase()}`).doc(task.id).update({ done: !task.done });
+            });
+            item.querySelector('.edit-btn').addEventListener('click', () => openEditModal(task));
+            item.querySelector('.delete-btn').addEventListener('click', () => {
+                if (confirm('¿Eliminar esta tarea?')) {
+                    db.collection(`tasks_${currentDepartment.toUpperCase()}`).doc(task.id).delete();
+                }
+            });
+            
             taskList.appendChild(item);
         });
     }
@@ -177,7 +217,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- EVENTOS GLOBALES Y INICIALIZACIÓN ---
+    // --- EVENTOS GLOBALES ---
     backBtn.addEventListener('click', showDashboard);
+
+    filterBar.addEventListener('click', e => {
+        if (e.target.matches('.filter-btn')) {
+            filterBar.querySelector('.active').classList.remove('active');
+            e.target.classList.add('active');
+            currentFilter = e.target.dataset.filter;
+            listenForTasks(); // Volvemos a llamar para re-renderizar con el nuevo filtro
+        }
+    });
+    
+    // --- INICIALIZACIÓN ---
     renderDashboard();
 });
