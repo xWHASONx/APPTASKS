@@ -27,18 +27,6 @@ h1 { text-align: center; }
 .view { display: none; }
 .view.active { display: block; }
 
-/* Autenticación */
-#auth-container {
-    position: absolute;
-    top: 15px;
-    right: 20px;
-    display: flex;
-    align-items: center;
-}
-#user-info { display: flex; align-items: center; gap: 10px; background: #fff; padding: 5px 10px; border-radius: 20px; box-shadow: var(--shadow); }
-#user-photo { width: 30px; height: 30px; border-radius: 50%; }
-#login-btn, #logout-btn { border: none; background: var(--primary-color); color: white; padding: 8px 15px; border-radius: 8px; cursor: pointer; }
-
 /* Dashboard */
 #departments-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
 .dept-card { background: #fff; padding: 25px; border-radius: var(--border-radius); box-shadow: var(--shadow); cursor: pointer; text-align: center; transition: transform 0.2s, box-shadow 0.2s; }
@@ -71,8 +59,6 @@ header h1 { margin: 0; flex-grow: 1; }
 .task-name { font-weight: 600; }
 .task-meta { display: flex; align-items: center; gap: 8px; font-size: 0.8em; color: #999; margin-top: 5px; }
 .urgent-icon { color: var(--danger-color); font-size: 1.2em; }
-.task-creator { display: flex; align-items: center; gap: 4px; }
-.creator-photo { width: 16px; height: 16px; border-radius: 50%; }
 
 .task-actions { display: flex; gap: 8px; }
 .task-actions button { background: none; border: none; padding: 5px; cursor: pointer; opacity: 0.6; transition: opacity 0.2s; }
@@ -83,3 +69,4 @@ header h1 { margin: 0; flex-grow: 1; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 .task-item { animation: fadeIn 0.4s ease-out; }
 .sortable-ghost { opacity: 0.4; background: #c8ebfb; }
+.no-tasks { text-align: center; padding: 20px; color: #888; background: #fff; }
