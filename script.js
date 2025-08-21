@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- CONFIGURACIÓN DE FIREBASE ---
-    // PEGA AQUÍ TU OBJETO firebaseConfig
     const firebaseConfig = {
         apiKey: "AIzaSy...",
         authDomain: "tu-proyecto.firebaseapp.com",
@@ -14,22 +13,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- INICIALIZACIÓN DE SERVICIOS ---
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
-    const auth = firebase.auth();
 
     // --- ESTADO GLOBAL DE LA APP ---
     const departments = { 'TECH': '💻', 'VENTAS': '💰', 'MARKETING': '📈', 'RESERVAS': '📅', 'ADMINISTRATIVA': '🗂️' };
     let currentDepartment = null;
-    let currentUser = null;
     let unsubscribe = null;
     const notificationSound = new Audio('notification.mp3');
     let isFirstLoad = true;
 
     // --- ELEMENTOS DEL DOM ---
-    const loginBtn = document.getElementById('login-btn');
-    const logoutBtn = document.getElementById('logout-btn');
-    const userInfo = document.getElementById('user-info');
-    const userName = document.getElementById('user-name');
-    const userPhoto = document.getElementById('user-photo');
     const dashboardView = document.getElementById('dashboard-view');
     const tasksView = document.getElementById('tasks-view');
     const departmentsGrid = document.getElementById('departments-grid');
@@ -40,37 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const tUrgentCheckbox = document.getElementById('tUrgent');
     const backBtn = document.getElementById('back-to-dashboard');
 
-    // --- LÓGICA DE AUTENTICACIÓN ---
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            currentUser = {
-                uid: user.uid,
-                name: user.displayName,
-                photoURL: user.photoURL
-            };
-            userName.textContent = user.displayName;
-            userPhoto.src = user.photoURL;
-            userInfo.style.display = 'flex';
-            loginBtn.style.display = 'none';
-            showDashboard();
-        } else {
-            currentUser = null;
-            userInfo.style.display = 'none';
-            loginBtn.style.display = 'block';
-            dashboardView.classList.remove('active');
-            tasksView.classList.remove('active');
-        }
-    });
-
-    loginBtn.addEventListener('click', () => {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider).catch(error => console.error("Error en login:", error));
-    });
-
-    logoutBtn.addEventListener('click', () => {
-        auth.signOut();
-    });
-
     // --- LÓGICA DE NAVEGACIÓN ---
     function showDashboard() {
         dashboardView.classList.add('active');
@@ -79,7 +40,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function showTasks(department) {
-        if (!currentUser) { alert("Debes iniciar sesión para ver las tareas."); return; }
         dashboardView.classList.remove('active');
         tasksView.classList.add('active');
         currentDepartment = department;
@@ -89,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- LÓGICA DE DATOS (FIREBASE) ---
     function listenForTasks() {
-        if (!currentDepartment || !currentUser) return;
+        if (!currentDepartment) return;
         if (unsubscribe) unsubscribe();
         
         isFirstLoad = true;
@@ -119,8 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
             done: false,
             urgent: isUrgent,
             orden: Date.now(),
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            createdBy: currentUser
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         tNameInput.value = '';
         tUrgentCheckbox.checked = false;
@@ -139,10 +98,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (doc.exists) taskDoc.update({ done: !doc.data().done });
             });
         }
-        if (e.target.matches('.delete-btn, .delete-btn *')) { // El * es para el icono dentro del botón
+        if (e.target.matches('.delete-btn')) {
             if (confirm('¿Eliminar esta tarea?')) taskDoc.delete();
         }
-        if (e.target.matches('.urgent-btn, .urgent-btn *')) {
+        if (e.target.matches('.urgent-btn')) {
              taskDoc.get().then(doc => {
                 if (doc.exists) taskDoc.update({ urgent: !doc.data().urgent });
             });
@@ -186,14 +145,14 @@ document.addEventListener('DOMContentLoaded', () => {
             item.dataset.id = task.id;
 
             const urgentIcon = task.urgent ? '<span class="urgent-icon" title="¡Urgente!">🔥</span>' : '';
-            const creatorInfo = task.createdBy ? `<div class="task-creator" title="Creado por ${task.createdBy.name}"><img class="creator-photo" src="${task.createdBy.photoURL}"></div>` : '';
+            const createdAt = task.createdAt ? new Date(task.createdAt.seconds * 1000).toLocaleDateString() : '';
 
             item.innerHTML = `
                 <input type="checkbox" class="toggle-status" ${task.done ? 'checked' : ''}>
                 <div class="task-details">
                     <div class="task-name">${task.name}</div>
                     <div class="task-meta">
-                        ${creatorInfo}
+                        <span>${createdAt}</span>
                         ${urgentIcon}
                     </div>
                 </div>
