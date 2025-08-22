@@ -38,38 +38,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // Toolbars
     const toolbarStandard = document.getElementById('toolbar-standard');
     const toolbarMarketing = document.getElementById('toolbar-marketing');
-    // Toolbar Standard Fields
-    const tNameInput = document.getElementById('tName');
-    const tDescInput = document.getElementById('tDesc');
-    const tUrgentCheckbox = document.getElementById('tUrgent');
-    const addTaskBtn = document.getElementById('add-task-btn');
-    // Toolbar Marketing Fields
-    const mAdTypeInput = document.getElementById('mAdType');
-    const mContentInput = document.getElementById('mContent');
-    const referencesContainer = document.getElementById('references-container');
-    const addMoreFilesBtn = document.getElementById('add-more-files-btn');
-    const addMarketingTaskBtn = document.getElementById('add-marketing-task-btn');
     
     // --- LÓGICA DE MODO OSCURO ---
     const themeToggles = [document.getElementById('theme-toggle-dashboard'), document.getElementById('theme-toggle-tasks')];
     
     function applyTheme(isDark) {
-        if (isDark) {
-            document.body.classList.add('dark-mode');
-        } else {
-            document.body.classList.remove('dark-mode');
-        }
+        document.body.classList.toggle('dark-mode', isDark);
         themeToggles.forEach(toggle => toggle.checked = isDark);
     }
 
     function toggleTheme() {
-        const isDark = document.body.classList.toggle('dark-mode');
-        localStorage.setItem('darkMode', isDark);
-        themeToggles.forEach(toggle => toggle.checked = isDark);
+        const isDark = document.body.classList.contains('dark-mode');
+        localStorage.setItem('darkMode', !isDark);
+        applyTheme(!isDark);
     }
 
     themeToggles.forEach(toggle => toggle.addEventListener('change', toggleTheme));
-    // Aplicar tema guardado al cargar
     const savedTheme = localStorage.getItem('darkMode') === 'true';
     applyTheme(savedTheme);
 
@@ -86,14 +70,8 @@ document.addEventListener('DOMContentLoaded', () => {
         currentDepartment = department;
         departmentTitle.textContent = department;
         
-        // Mostrar la toolbar correcta
-        if (department === 'MARKETING') {
-            toolbarStandard.style.display = 'none';
-            toolbarMarketing.style.display = 'grid';
-        } else {
-            toolbarStandard.style.display = 'grid';
-            toolbarMarketing.style.display = 'none';
-        }
+        toolbarStandard.style.display = (department === 'MARKETING') ? 'none' : 'grid';
+        toolbarMarketing.style.display = (department === 'MARKETING') ? 'grid' : 'none';
         
         listenForTasks();
     }
@@ -116,45 +94,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }, error => console.error("Error al escuchar tareas: ", error));
     }
 
-    // --- ACCIONES DE TAREAS ---
-    addTaskBtn.addEventListener('click', () => { // Para tareas estándar
-        const name = tNameInput.value.trim();
-        const description = tDescInput.value.trim();
-        if (!name) return;
-        db.collection(`tasks_${currentDepartment.toUpperCase()}`).add({
-            name, description, done: false, urgent: tUrgentCheckbox.checked, orden: Date.now(),
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        tNameInput.value = ''; tDescInput.value = ''; tUrgentCheckbox.checked = false;
-    });
-
-    addMarketingTaskBtn.addEventListener('click', async () => { // Para tareas de Marketing
-        const adType = mAdTypeInput.value.trim();
-        const content = mContentInput.value.trim();
-        if (!adType) { alert('El tipo de anuncio es obligatorio.'); return; }
-
-        const fileInputs = referencesContainer.querySelectorAll('.reference-file');
-        const files = Array.from(fileInputs).map(input => input.files[0]).filter(file => file);
-        
-        addMarketingTaskBtn.textContent = 'Subiendo...';
-        addMarketingTaskBtn.disabled = true;
-
-        const referenceURLs = await Promise.all(
-            files.map(file => uploadFile(file))
-        );
-
-        db.collection(`tasks_MARKETING`).add({
-            adType, content, done: false, urgent: false, orden: Date.now(),
-            references: referenceURLs,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-        mAdTypeInput.value = ''; mContentInput.value = '';
-        referencesContainer.innerHTML = '<label>Imágenes de Referencia:</label><div class="file-input-wrapper"><input type="file" class="reference-file" accept="image/*"></div>';
-        addMarketingTaskBtn.textContent = 'Añadir Anuncio';
-        addMarketingTaskBtn.disabled = false;
-    });
-
     async function uploadFile(file) {
         const filePath = `references/${currentDepartment}/${Date.now()}_${file.name}`;
         const fileRef = storage.ref(filePath);
@@ -162,21 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return await fileRef.getDownloadURL();
     }
 
-    addMoreFilesBtn.addEventListener('click', () => {
-        const newInputWrapper = document.createElement('div');
-        newInputWrapper.className = 'file-input-wrapper';
-        newInputWrapper.innerHTML = '<input type="file" class="reference-file" accept="image/*">';
-        referencesContainer.appendChild(newInputWrapper);
-    });
-    
-    // --- LÓGICA DRAG & DROP, FILTROS, RENDERIZADO --- (el resto del script)
-    
-    new Sortable(taskList, { animation: 150, handle: '.task-item', ghostClass: 'sortable-ghost', onEnd: saveOrder });
-    
-    function saveOrder() {
-        // ... (código sin cambios)
-    }
-
+    // --- RENDERIZADO ---
     function renderTasks(allTasks) {
         taskList.innerHTML = '';
         const filteredTasks = allTasks.filter(task => (currentFilter === 'pending' ? !task.done : task.done));
@@ -192,21 +117,20 @@ document.addEventListener('DOMContentLoaded', () => {
             if (task.urgent) item.classList.add('urgent');
             item.dataset.id = task.id;
             
-            // Renderizado condicional
             if (currentDepartment === 'MARKETING') {
                 item.innerHTML = renderMarketingTask(task);
             } else {
                 item.innerHTML = renderStandardTask(task);
             }
-
-            // Event Listeners (simplificado, ya que los botones son los mismos)
-            item.querySelector('.toggle-status').addEventListener('change', () => db.collection(`tasks_${currentDepartment.toUpperCase()}`).doc(task.id).update({ done: !task.done }));
-            item.querySelector('.delete-btn').addEventListener('click', () => { if (confirm('¿Eliminar?')) db.collection(`tasks_${currentDepartment.toUpperCase()}`).doc(task.id).delete(); });
             
             taskList.appendChild(item);
         });
     }
 
+    function renderStandardTask(task) { /* ... (sin cambios) ... */ }
+    function renderMarketingTask(task) { /* ... (sin cambios) ... */ }
+
+    // (Las funciones renderStandardTask y renderMarketingTask se quedan igual, las omito por brevedad pero deben estar en tu código)
     function renderStandardTask(task) {
         const urgentIcon = task.urgent ? `<span class="urgent-icon" title="¡Urgente!">🔥</span>` : '';
         const createdAt = task.createdAt ? new Date(task.createdAt.seconds * 1000).toLocaleDateString() : '';
@@ -255,9 +179,92 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    // --- EVENTOS GLOBALES ---
-    backBtn.addEventListener('click', showDashboard);
-    filterBar.addEventListener('click', e => {
+    // --- DRAG & DROP ---
+    new Sortable(taskList, { animation: 150, handle: '.task-item', ghostClass: 'sortable-ghost', onEnd: saveOrder });
+    function saveOrder() { /* ... (código sin cambios) ... */ }
+    function saveOrder() {
+        const items = taskList.querySelectorAll('.task-item');
+        const batch = db.batch();
+        const collectionName = `tasks_${currentDepartment.toUpperCase()}`;
+        items.forEach((item, index) => {
+            const docId = item.dataset.id;
+            if (docId) {
+                const docRef = db.collection(collectionName).doc(docId);
+                batch.update(docRef, { orden: Date.now() - index });
+            }
+        });
+        batch.commit().catch(err => console.error("Error al guardar orden: ", err));
+    }
+
+    // --- MANEJO DE EVENTOS CENTRALIZADO ---
+    document.body.addEventListener('click', async (e) => {
+        // --- Eventos de la Toolbar Estándar ---
+        if (e.target.id === 'add-task-btn') {
+            const tNameInput = document.getElementById('tName');
+            const tDescInput = document.getElementById('tDesc');
+            const tUrgentCheckbox = document.getElementById('tUrgent');
+            const name = tNameInput.value.trim();
+            const description = tDescInput.value.trim();
+            if (!name) return;
+            db.collection(`tasks_${currentDepartment.toUpperCase()}`).add({
+                name, description, done: false, urgent: tUrgentCheckbox.checked, orden: Date.now(),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            tNameInput.value = ''; tDescInput.value = ''; tUrgentCheckbox.checked = false;
+        }
+
+        // --- Eventos de la Toolbar de Marketing ---
+        if (e.target.id === 'add-more-files-btn') {
+            const referencesContainer = document.getElementById('references-container');
+            const newInputWrapper = document.createElement('div');
+            newInputWrapper.className = 'file-input-wrapper';
+            newInputWrapper.innerHTML = '<input type="file" class="reference-file" accept="image/*">';
+            referencesContainer.appendChild(newInputWrapper);
+        }
+
+        if (e.target.id === 'add-marketing-task-btn') {
+            const mAdTypeInput = document.getElementById('mAdType');
+            const mContentInput = document.getElementById('mContent');
+            const adType = mAdTypeInput.value.trim();
+            const content = mContentInput.value.trim();
+            if (!adType) { alert('El tipo de anuncio es obligatorio.'); return; }
+
+            const fileInputs = document.querySelectorAll('.reference-file');
+            const files = Array.from(fileInputs).map(input => input.files[0]).filter(file => file);
+            
+            e.target.textContent = 'Subiendo...'; e.target.disabled = true;
+
+            const referenceURLs = await Promise.all(files.map(file => uploadFile(file)));
+
+            db.collection(`tasks_MARKETING`).add({
+                adType, content, done: false, urgent: false, orden: Date.now(),
+                references: referenceURLs,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            mAdTypeInput.value = ''; mContentInput.value = '';
+            document.getElementById('references-container').innerHTML = '<label>Imágenes de Referencia:</label><div class="file-input-wrapper"><input type="file" class="reference-file" accept="image/*"></div>';
+            e.target.textContent = 'Añadir Anuncio'; e.target.disabled = false;
+        }
+        
+        // --- Eventos en la Lista de Tareas ---
+        const taskItem = e.target.closest('.task-item');
+        if (taskItem) {
+            const taskId = taskItem.dataset.id;
+            const collectionName = `tasks_${currentDepartment.toUpperCase()}`;
+            if (e.target.matches('.toggle-status')) {
+                const doc = await db.collection(collectionName).doc(taskId).get();
+                if (doc.exists) db.collection(collectionName).doc(taskId).update({ done: !doc.data().done });
+            }
+            if (e.target.matches('.delete-btn')) {
+                if (confirm('¿Eliminar?')) db.collection(collectionName).doc(taskId).delete();
+            }
+            // Aquí iría la lógica del botón de editar si lo tuviéramos
+        }
+        
+        // --- Otros Eventos Globales ---
+        if (e.target === backBtn) {
+            showDashboard();
+        }
         if (e.target.matches('.filter-btn')) {
             filterBar.querySelector('.active').classList.remove('active');
             e.target.classList.add('active');
@@ -265,7 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
             listenForTasks();
         }
     });
-    
+
     // --- INICIALIZACIÓN ---
     renderDashboard();
 });
