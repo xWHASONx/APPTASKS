@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
         apiKey: "AIzaSyCTeN6rZV5Fr3KY3zpUi6lH5YLhNmoEjh4",
         authDomain: "gestor-tareas-7a86a.firebaseapp.com",
         projectId: "gestor-tareas-7a86a",
-        storageBucket: "gestor-tareas-7a86a.appspot.com",
+        storageBucket: "gestor-tareas-7a86a.firebasestorage.app",
         messagingSenderId: "504609983937",
         appId: "1:504609983937:web:151da729026e7839637340"
     };
