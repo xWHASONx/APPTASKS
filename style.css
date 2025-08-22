@@ -78,3 +78,22 @@ header h1 { margin: 0; flex-grow: 1; }
 /* Drag&Drop y otros */
 .sortable-ghost { opacity: 0.4; background: #c8ebfb; }
 .no-tasks { text-align: center; padding: 20px; color: #888; background: #fff; }
+
+/* Estilos para la barra de búsqueda */
+.search-wrapper {
+    margin-bottom: 20px;
+}
+#search-bar {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ccc;
+    border-radius: 25px; /* Hace la barra de búsqueda redondeada */
+    font-size: 1rem;
+    box-sizing: border-box;
+    transition: all 0.2s ease-in-out;
+}
+#search-bar:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
