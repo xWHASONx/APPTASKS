@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- CONFIGURACIÓN DE FIREBASE ---
-    // ¡¡ASEGÚRATE DE PEGAR AQUÍ LAS CLAVES DE TU PROYECTO 'gestor-tareas-7a86a'!!
     const firebaseConfig = {
         apiKey: "AIzaSyCTeN6rZV5Fr3KY3zpUi6lH5YLhNmoEjh4",
         authDomain: "gestor-tareas-7a86a.firebaseapp.com",
@@ -27,7 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const notificationSound = new Audio('notification.mp3');
     let isFirstLoad = true;
     let currentFilter = 'pending';
-    let localTasks = []; // AÑADIDO: Caché local para las tareas
+    let localTasks = [];
+    let searchTerm = ''; // Estado para el término de búsqueda
 
     // --- ELEMENTOS DEL DOM ---
     const dashboardView = document.getElementById('dashboard-view');
@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tUrgentCheckbox = document.getElementById('tUrgent');
     const backBtn = document.getElementById('back-to-dashboard');
     const filterBar = document.querySelector('.filter-bar');
+    const searchBar = document.getElementById('search-bar'); // Elemento de la barra de búsqueda
     // Modal de edición
     const editModal = document.getElementById('edit-modal');
     const editTaskId = document.getElementById('edit-task-id');
@@ -54,7 +55,9 @@ document.addEventListener('DOMContentLoaded', () => {
         dashboardView.classList.add('active');
         tasksView.classList.remove('active');
         if (unsubscribe) unsubscribe();
-        localTasks = []; // AÑADIDO: Limpiar caché al salir de la vista
+        localTasks = [];
+        searchBar.value = ''; // Limpiar búsqueda al volver
+        searchTerm = '';
     }
 
     function showTasks(department) {
@@ -75,31 +78,51 @@ document.addEventListener('DOMContentLoaded', () => {
         
         unsubscribe = db.collection(collectionName).orderBy('orden', 'desc')
             .onSnapshot(snapshot => {
+                const newTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                // Lógica de notificación
                 if (!isFirstLoad) {
                     notificationSound.play().catch(e => {});
+                    const addedTask = newTasks.find(t => !localTasks.some(lt => lt.id === t.id));
+                    if (addedTask) {
+                        showNotification(`Nueva tarea en ${currentDepartment}: "${addedTask.name}"`);
+                    }
                 }
-                isFirstLoad = false;
                 
-                localTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); // CAMBIADO: Almacenar tareas en la caché local
-                renderTasks(); // CAMBIADO: Llamar al renderizado sin argumentos
+                localTasks = newTasks;
+                renderTasks(); 
+                isFirstLoad = false;
             }, error => console.error("Error al escuchar tareas: ", error));
     }
 
     // --- RENDERIZADO ---
-    function renderTasks() { // CAMBIADO: La función ya no necesita argumentos
+    function renderTasks() { 
         taskList.innerHTML = '';
-        const filteredTasks = localTasks.filter(task => { // CAMBIADO: Filtrar desde la caché local
+        
+        // Aplicar filtro de búsqueda y de estado
+        let tasksToRender = localTasks;
+
+        // 1. Filtrar por estado (Pendiente/Completada)
+        tasksToRender = tasksToRender.filter(task => {
             if (currentFilter === 'pending') return !task.done;
             if (currentFilter === 'completed') return task.done;
             return true;
         });
 
-        if (filteredTasks.length === 0) {
-            taskList.innerHTML = `<div class="no-tasks">🎉 No hay tareas en esta vista.</div>`;
+        // 2. Filtrar por término de búsqueda
+        if (searchTerm) {
+            tasksToRender = tasksToRender.filter(task => 
+                task.name.toLowerCase().includes(searchTerm) ||
+                (task.description && task.description.toLowerCase().includes(searchTerm))
+            );
+        }
+
+        if (tasksToRender.length === 0) {
+            taskList.innerHTML = `<div class="no-tasks">🎉 No hay tareas que coincidan con tus filtros.</div>`;
             return;
         }
 
-        filteredTasks.forEach(task => {
+        tasksToRender.forEach(task => {
             const item = document.createElement('div');
             item.className = 'task-item';
             if (task.done) item.classList.add('done');
@@ -231,10 +254,35 @@ document.addEventListener('DOMContentLoaded', () => {
             filterBar.querySelector('.active').classList.remove('active');
             e.target.classList.add('active');
             currentFilter = e.target.dataset.filter;
-            renderTasks(); // CAMBIADO: En lugar de volver a escuchar, solo renderizamos con el nuevo filtro
+            renderTasks();
         }
     });
+
+    // Evento para la barra de búsqueda
+    searchBar.addEventListener('input', (e) => {
+        searchTerm = e.target.value.trim().toLowerCase();
+        renderTasks();
+    });
     
+    // --- LÓGICA DE NOTIFICACIONES ---
+    function requestNotificationPermission() {
+        if (!("Notification" in window)) {
+            console.log("Este navegador no soporta notificaciones de escritorio.");
+        } else if (Notification.permission !== "denied") {
+            Notification.requestPermission();
+        }
+    }
+
+    function showNotification(body) {
+        if (Notification.permission === "granted") {
+            new Notification("Gestor de Tareas", {
+                body: body,
+                icon: "https://i.imgur.com/g626kGO.png" // Un icono simple de check
+            });
+        }
+    }
+
     // --- INICIALIZACIÓN ---
     renderDashboard();
+    requestNotificationPermission(); // Pedir permiso al cargar
 });
