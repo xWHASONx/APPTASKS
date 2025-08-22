@@ -1,15 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- CONFIGURACIÓN DE FIREBASE ---
-// ¡¡ASEGÚRATE DE PEGAR AQUÍ LAS CLAVES DE TU PROYECTO 'gestor-tareas-7a86a'!!
-const firebaseConfig = {
-    apiKey: "AIzaSyCTeN6rZV5Fr3KY3zpUi6lH5YLhNmoEjh4",
-    authDomain: "gestor-tareas-7a86a.firebaseapp.com",
-    projectId: "gestor-tareas-7a86a",
-    storageBucket: "gestor-tareas-7a86a.appspot.com",
-    messagingSenderId: "504609983937",
-    appId: "1:504609983937:web:151da729026e7839637340"
-};
+    // ¡¡ASEGÚRATE DE PEGAR AQUÍ LAS CLAVES DE TU PROYECTO 'gestor-tareas-7a86a'!!
+    const firebaseConfig = {
+        apiKey: "AIzaSyCTeN6rZV5Fr3KY3zpUi6lH5YLhNmoEjh4",
+        authDomain: "gestor-tareas-7a86a.firebaseapp.com",
+        projectId: "gestor-tareas-7a86a",
+        storageBucket: "gestor-tareas-7a86a.appspot.com",
+        messagingSenderId: "504609983937",
+        appId: "1:504609983937:web:151da729026e7839637340"
+    };
 
     // --- INICIALIZACIÓN DE SERVICIOS ---
     try {
@@ -27,6 +27,7 @@ const firebaseConfig = {
     const notificationSound = new Audio('notification.mp3');
     let isFirstLoad = true;
     let currentFilter = 'pending';
+    let localTasks = []; // AÑADIDO: Caché local para las tareas
 
     // --- ELEMENTOS DEL DOM ---
     const dashboardView = document.getElementById('dashboard-view');
@@ -53,6 +54,7 @@ const firebaseConfig = {
         dashboardView.classList.add('active');
         tasksView.classList.remove('active');
         if (unsubscribe) unsubscribe();
+        localTasks = []; // AÑADIDO: Limpiar caché al salir de la vista
     }
 
     function showTasks(department) {
@@ -78,15 +80,15 @@ const firebaseConfig = {
                 }
                 isFirstLoad = false;
                 
-                const allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                renderTasks(allTasks);
+                localTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })); // CAMBIADO: Almacenar tareas en la caché local
+                renderTasks(); // CAMBIADO: Llamar al renderizado sin argumentos
             }, error => console.error("Error al escuchar tareas: ", error));
     }
 
     // --- RENDERIZADO ---
-    function renderTasks(allTasks) {
+    function renderTasks() { // CAMBIADO: La función ya no necesita argumentos
         taskList.innerHTML = '';
-        const filteredTasks = allTasks.filter(task => {
+        const filteredTasks = localTasks.filter(task => { // CAMBIADO: Filtrar desde la caché local
             if (currentFilter === 'pending') return !task.done;
             if (currentFilter === 'completed') return task.done;
             return true;
@@ -229,7 +231,7 @@ const firebaseConfig = {
             filterBar.querySelector('.active').classList.remove('active');
             e.target.classList.add('active');
             currentFilter = e.target.dataset.filter;
-            listenForTasks();
+            renderTasks(); // CAMBIADO: En lugar de volver a escuchar, solo renderizamos con el nuevo filtro
         }
     });
     
