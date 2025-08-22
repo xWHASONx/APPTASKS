@@ -1,4 +1,3 @@
-// --- INICIO DEL ARCHIVO SCRIPT.JS ---
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- CONFIGURACIÓN DE FIREBASE ---
@@ -30,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentFilter = 'pending';
     let localTasks = [];
     let searchTerm = '';
+    let filesToUpload = []; // Almacenará los archivos (imágenes) antes de subirlos
 
     // --- ELEMENTOS DEL DOM ---
     const dashboardView = document.getElementById('dashboard-view');
@@ -47,8 +47,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const marketingToolbar = document.getElementById('marketing-toolbar');
     const mAdType = document.getElementById('m-ad-type');
     const mContent = document.getElementById('m-content');
-    const referencesContainer = document.getElementById('references-container');
-    const addReferenceBtn = document.getElementById('add-reference-btn');
+    const pasteArea = document.getElementById('paste-area');
+    const previewsContainer = document.getElementById('previews-container');
+    const hiddenFileInput = document.getElementById('hidden-file-input');
     // Modal de edición
     const editModal = document.getElementById('edit-modal');
     const editTaskId = document.getElementById('edit-task-id');
@@ -205,28 +206,66 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- EVENTOS ---
-    addReferenceBtn.addEventListener('click', () => {
-        const fileInputs = referencesContainer.querySelectorAll('input[type="file"]');
-        if (fileInputs.length < 5) {
-            const newInput = document.createElement('input');
-            newInput.type = 'file';
-            newInput.accept = 'image/*';
-            referencesContainer.appendChild(newInput);
-        } else {
+
+    pasteArea.addEventListener('click', () => hiddenFileInput.click());
+
+    pasteArea.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const items = e.clipboardData.items;
+        for (const item of items) {
+            if (item.type.indexOf('image') !== -1) {
+                const file = item.getAsFile();
+                addFileToPreview(file);
+            }
+        }
+    });
+
+    hiddenFileInput.addEventListener('change', (e) => {
+        for (const file of e.target.files) {
+            addFileToPreview(file);
+        }
+        hiddenFileInput.value = '';
+    });
+
+    function addFileToPreview(file) {
+        if (filesToUpload.length >= 5) {
             alert('Puedes añadir un máximo de 5 imágenes.');
+            return;
+        }
+        
+        file.uniqueId = Date.now() + Math.random();
+        filesToUpload.push(file);
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'preview-image-wrapper';
+            wrapper.innerHTML = `
+                <img src="${e.target.result}" class="preview-image">
+                <button class="remove-preview-btn" data-id="${file.uniqueId}">&times;</button>
+            `;
+            previewsContainer.appendChild(wrapper);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    previewsContainer.addEventListener('click', (e) => {
+        if (e.target.classList.contains('remove-preview-btn')) {
+            const idToRemove = parseFloat(e.target.dataset.id);
+            filesToUpload = filesToUpload.filter(file => file.uniqueId !== idToRemove);
+            e.target.parentElement.remove();
         }
     });
 
     addTaskBtn.addEventListener('click', async () => {
         const name = tNameInput.value.trim();
-        const description = tDescInput.value.trim();
         if (!name) { alert('El nombre de la tarea es obligatorio.'); return; }
         addTaskBtn.disabled = true;
         addTaskBtn.textContent = 'Añadiendo...';
 
         let taskData = {
             name: name,
-            description: description,
+            description: tDescInput.value.trim(),
             done: false,
             urgent: tUrgentCheckbox.checked,
             orden: Date.now(),
@@ -236,11 +275,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentDepartment === 'MARKETING') {
             taskData.adType = mAdType.value;
             taskData.content = mContent.value.trim();
-            const fileInputs = referencesContainer.querySelectorAll('input[type="file"]');
-            const files = Array.from(fileInputs).map(input => input.files[0]).filter(Boolean);
 
-            if (files.length > 0) {
-                const uploadPromises = files.map(file => {
+            if (filesToUpload.length > 0) {
+                const uploadPromises = filesToUpload.map(file => {
                     const filePath = `marketing_references/${Date.now()}_${file.name}`;
                     const fileRef = storage.ref(filePath);
                     return fileRef.put(file).then(async () => ({
@@ -248,6 +285,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         path: filePath
                     }));
                 });
+                
                 const results = await Promise.all(uploadPromises);
                 taskData.referenciasUrls = results.map(r => r.url);
                 taskData.referenciasPaths = results.map(r => r.path);
@@ -259,7 +297,9 @@ document.addEventListener('DOMContentLoaded', () => {
             tNameInput.value = '';
             tDescInput.value = '';
             tUrgentCheckbox.checked = false;
-            if (currentDepartment === 'MARKETING') resetMarketingForm();
+            if (currentDepartment === 'MARKETING') {
+                resetMarketingForm();
+            }
         } catch (error) {
             console.error("Error al añadir la tarea:", error);
             alert("Hubo un error al guardar la tarea.");
@@ -314,7 +354,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetMarketingForm() {
         mAdType.value = '';
         mContent.value = '';
-        referencesContainer.innerHTML = '';
+        previewsContainer.innerHTML = '';
+        filesToUpload = [];
     }
     
     function openEditModal(task) {
@@ -378,4 +419,3 @@ document.addEventListener('DOMContentLoaded', () => {
     renderDashboard();
     requestNotificationPermission();
 });
-// --- FIN DEL ARCHIVO SCRIPT.JS ---
