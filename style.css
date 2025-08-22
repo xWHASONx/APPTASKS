@@ -41,14 +41,14 @@ header h1 { margin: 0; flex-grow: 1; }
     margin-bottom: 20px;
 }
 .toolbar { display: grid; grid-template-columns: 1fr 1fr auto auto; gap: 8px; }
-.toolbar input, .toolbar button, #marketing-toolbar select, #marketing-toolbar textarea, #marketing-toolbar button {
+.toolbar input, .toolbar button, #marketing-toolbar select, #marketing-toolbar textarea {
     padding: 12px;
     border: 1px solid #ccc;
     border-radius: 8px;
     font-size: 1rem;
     font-family: var(--font-family);
 }
-.toolbar button, #marketing-toolbar button {
+.toolbar button {
     border: none;
     background: var(--primary-color);
     color: white;
@@ -60,14 +60,12 @@ header h1 { margin: 0; flex-grow: 1; }
     cursor: not-allowed;
 }
 
-
 .urgent-wrapper { display: flex; align-items: center; justify-content: center; padding: 0 10px; background-color: #fff; border: 1px solid #ccc; border-radius: 8px; }
 .urgent-wrapper label { font-size: 1.5em; cursor: pointer; filter: grayscale(100%); transition: all 0.2s; }
 #tUrgent { display: none; }
 #tUrgent:checked + label { filter: grayscale(0%); transform: scale(1.1); }
 
-
-/* ===== INICIO DE ESTILOS NUEVOS PARA MARKETING ===== */
+/* Estilos para Marketing Toolbar */
 #marketing-toolbar {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -93,15 +91,65 @@ header h1 { margin: 0; flex-grow: 1; }
     font-size: 0.9em;
     color: #555;
 }
-#references-container input[type="file"] {
-    font-size: 0.9em;
+
+/* Estilos para Pegar Imágenes */
+.paste-area {
+    border: 2px dashed #ccc;
+    border-radius: var(--border-radius);
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    background-color: #fafafa;
+    transition: background-color 0.2s, border-color 0.2s;
+    grid-column: 1 / -1; /* Ocupa todo el ancho en el grid */
 }
-#add-reference-btn {
-    background-color: #6c757d;
-    align-self: flex-start;
-    padding: 8px 12px;
-    font-size: 0.9em;
+.paste-area:hover, .paste-area.dragover {
+    background-color: #f0f8ff;
+    border-color: var(--primary-color);
 }
+.paste-area span {
+    color: #888;
+    font-weight: 500;
+}
+.previews-container {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    grid-column: 1 / -1;
+}
+.preview-image-wrapper {
+    position: relative;
+    width: 80px;
+    height: 80px;
+}
+.preview-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid #ddd;
+}
+.remove-preview-btn {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 20px;
+    height: 20px;
+    background-color: var(--danger-color);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    padding: 0;
+}
+
+/* Estilos para la info extra de Marketing en la Tarea */
 .task-extra-info {
     font-size: 0.85em;
     color: #333;
@@ -109,7 +157,7 @@ header h1 { margin: 0; flex-grow: 1; }
     padding: 5px 8px;
     border-radius: 6px;
     margin-top: 8px;
-    white-space: pre-wrap; /* Para respetar saltos de línea en el copy */
+    white-space: pre-wrap;
 }
 .references-gallery {
     display: flex;
@@ -129,8 +177,6 @@ header h1 { margin: 0; flex-grow: 1; }
     transform: scale(1.1);
     border-color: var(--primary-color);
 }
-/* ===== FIN DE ESTILOS NUEVOS PARA MARKETING ===== */
-
 
 /* Filtros */
 .filter-bar { margin-bottom: 20px; display: flex; gap: 10px; }
@@ -139,7 +185,7 @@ header h1 { margin: 0; flex-grow: 1; }
 
 /* Lista de Tareas */
 .list { border-radius: var(--border-radius); overflow: hidden; box-shadow: var(--shadow); min-height: 100px; }
-.task-item { display: grid; grid-template-columns: auto 1fr auto; gap: 15px; align-items: start; /* Cambiado a start para alinear bien con contenido extra */ padding: 15px; background: #fff; border-bottom: 1px solid #eee; cursor: grab; }
+.task-item { display: grid; grid-template-columns: auto 1fr auto; gap: 15px; align-items: start; padding: 15px; background: #fff; border-bottom: 1px solid #eee; cursor: grab; }
 .task-item.done .task-details { text-decoration: line-through; opacity: 0.5; }
 .task-item.urgent { background-color: var(--urgent-bg); border-left: 4px solid var(--urgent-border); }
 
@@ -154,8 +200,15 @@ header h1 { margin: 0; flex-grow: 1; }
 .task-actions button:hover { opacity: 1; }
 
 /* Modal de Edición */
-.modal-overlay { /* ... (sin cambios) ... */ }
-.modal-content { /* ... (sin cambios) ... */ }
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal-content { background: #fff; padding: 25px; border-radius: var(--border-radius); box-shadow: 0 5px 15px rgba(0,0,0,0.3); width: 90%; max-width: 500px; }
+.modal-content h2 { margin-top: 0; }
+.modal-content input, .modal-content textarea { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+.modal-content textarea { min-height: 100px; resize: vertical; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.modal-actions button { padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; }
+#save-edit-btn { background: var(--primary-color); color: #fff; }
+#cancel-edit-btn { background: #e4e6eb; }
 
 /* Drag&Drop y otros */
 .sortable-ghost { opacity: 0.4; background: #c8ebfb; }
