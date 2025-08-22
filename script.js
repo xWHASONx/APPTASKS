@@ -1,25 +1,27 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- CONFIGURACIÓN DE FIREBASE ---
+    // He insertado aquí las claves de tu NUEVO proyecto 'gestor-tareas-7a86a'.
     const firebaseConfig = {
-        apiKey: "AIzaSy...",
-        authDomain: "tu-proyecto.firebaseapp.com",
-        projectId: "tu-proyecto",
-        storageBucket: "tu-proyecto.appspot.com",
-        messagingSenderId: "...",
-        appId: "..."
+        apiKey: "AIzaSyCTeN6rZV5Fr3KY3zpUi6lH5YLhNmoEjh4",
+        authDomain: "gestor-tareas-7a86a.firebaseapp.com",
+        projectId: "gestor-tareas-7a86a",
+        storageBucket: "gestor-tareas-7a86a.appspot.com", // Nota: Corregí esto a .appspot.com que es más compatible.
+        messagingSenderId: "504609983937",
+        appId: "1:504609983937:web:151da729026e7839637340"
     };
 
     // --- INICIALIZACIÓN DE SERVICIOS ---
     try {
         firebase.initializeApp(firebaseConfig);
     } catch (e) {
+        console.error("Error al inicializar Firebase. ¿Pegaste bien tu 'firebaseConfig'?", e);
         alert("Error de configuración de Firebase. Revisa la consola.");
     }
     const db = firebase.firestore();
     const storage = firebase.storage();
 
-    // --- ESTADO GLOBAL ---
+    // --- ESTADO GLOBAL DE LA APP ---
     const departments = { 'TECH': '💻', 'VENTAS': '💰', 'MARKETING': '📈', 'RESERVAS': '📅', 'ADMINISTRATIVA': '🗂️' };
     let currentDepartment = null;
     let unsubscribe = null;
@@ -33,9 +35,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const departmentsGrid = document.getElementById('departments-grid');
     const taskList = document.getElementById('task-list');
     const departmentTitle = document.getElementById('department-title');
+    const addTaskBtn = document.getElementById('add-task-btn');
+    const tNameInput = document.getElementById('tName');
+    const tDescInput = document.getElementById('tDesc');
+    const tUrgentCheckbox = document.getElementById('tUrgent');
     const backBtn = document.getElementById('back-to-dashboard');
     const filterBar = document.querySelector('.filter-bar');
-    // Toolbars
+    const editModal = document.getElementById('edit-modal');
+    const editTaskId = document.getElementById('edit-task-id');
+    const editTaskName = document.getElementById('edit-task-name');
+    const editTaskDesc = document.getElementById('edit-task-desc');
+    const saveEditBtn = document.getElementById('save-edit-btn');
+    const cancelEditBtn = document.getElementById('cancel-edit-btn');
     const toolbarStandard = document.getElementById('toolbar-standard');
     const toolbarMarketing = document.getElementById('toolbar-marketing');
     
@@ -69,10 +80,8 @@ document.addEventListener('DOMContentLoaded', () => {
         tasksView.classList.add('active');
         currentDepartment = department;
         departmentTitle.textContent = department;
-        
         toolbarStandard.style.display = (department === 'MARKETING') ? 'none' : 'grid';
         toolbarMarketing.style.display = (department === 'MARKETING') ? 'grid' : 'none';
-        
         listenForTasks();
     }
 
@@ -86,7 +95,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         unsubscribe = db.collection(collectionName).orderBy('orden', 'desc')
             .onSnapshot(snapshot => {
-                if (!isFirstLoad) notificationSound.play().catch(e => {});
+                if (!isFirstLoad) {
+                    notificationSound.play().catch(e => {});
+                }
                 isFirstLoad = false;
                 
                 const allTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -104,10 +115,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- RENDERIZADO ---
     function renderTasks(allTasks) {
         taskList.innerHTML = '';
-        const filteredTasks = allTasks.filter(task => (currentFilter === 'pending' ? !task.done : task.done));
+        const filteredTasks = allTasks.filter(task => {
+            if (currentFilter === 'pending') return !task.done;
+            if (currentFilter === 'completed') return task.done;
+            return true;
+        });
 
         if (filteredTasks.length === 0) {
-            taskList.innerHTML = `<div class="no-tasks">🎉 No hay tareas en esta vista.</div>`; return;
+            taskList.innerHTML = `<div class="no-tasks">🎉 No hay tareas en esta vista.</div>`;
+            return;
         }
 
         filteredTasks.forEach(task => {
@@ -116,21 +132,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (task.done) item.classList.add('done');
             if (task.urgent) item.classList.add('urgent');
             item.dataset.id = task.id;
-            
+
             if (currentDepartment === 'MARKETING') {
                 item.innerHTML = renderMarketingTask(task);
             } else {
                 item.innerHTML = renderStandardTask(task);
             }
-            
             taskList.appendChild(item);
         });
     }
 
-    function renderStandardTask(task) { /* ... (sin cambios) ... */ }
-    function renderMarketingTask(task) { /* ... (sin cambios) ... */ }
-
-    // (Las funciones renderStandardTask y renderMarketingTask se quedan igual, las omito por brevedad pero deben estar en tu código)
     function renderStandardTask(task) {
         const urgentIcon = task.urgent ? `<span class="urgent-icon" title="¡Urgente!">🔥</span>` : '';
         const createdAt = task.createdAt ? new Date(task.createdAt.seconds * 1000).toLocaleDateString() : '';
@@ -181,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // --- DRAG & DROP ---
     new Sortable(taskList, { animation: 150, handle: '.task-item', ghostClass: 'sortable-ghost', onEnd: saveOrder });
-    function saveOrder() { /* ... (código sin cambios) ... */ }
+
     function saveOrder() {
         const items = taskList.querySelectorAll('.task-item');
         const batch = db.batch();
@@ -198,47 +209,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- MANEJO DE EVENTOS CENTRALIZADO ---
     document.body.addEventListener('click', async (e) => {
-        // --- Eventos de la Toolbar Estándar ---
+        // Toolbar Estándar
         if (e.target.id === 'add-task-btn') {
-            const tNameInput = document.getElementById('tName');
-            const tDescInput = document.getElementById('tDesc');
-            const tUrgentCheckbox = document.getElementById('tUrgent');
             const name = tNameInput.value.trim();
-            const description = tDescInput.value.trim();
             if (!name) return;
             db.collection(`tasks_${currentDepartment.toUpperCase()}`).add({
-                name, description, done: false, urgent: tUrgentCheckbox.checked, orden: Date.now(),
+                name: name, description: tDescInput.value.trim(), done: false,
+                urgent: tUrgentCheckbox.checked, orden: Date.now(),
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             tNameInput.value = ''; tDescInput.value = ''; tUrgentCheckbox.checked = false;
         }
 
-        // --- Eventos de la Toolbar de Marketing ---
+        // Toolbar Marketing
         if (e.target.id === 'add-more-files-btn') {
-            const referencesContainer = document.getElementById('references-container');
-            const newInputWrapper = document.createElement('div');
-            newInputWrapper.className = 'file-input-wrapper';
-            newInputWrapper.innerHTML = '<input type="file" class="reference-file" accept="image/*">';
-            referencesContainer.appendChild(newInputWrapper);
+            const container = document.getElementById('references-container');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'file-input-wrapper';
+            wrapper.innerHTML = '<input type="file" class="reference-file" accept="image/*">';
+            container.appendChild(wrapper);
         }
 
         if (e.target.id === 'add-marketing-task-btn') {
             const mAdTypeInput = document.getElementById('mAdType');
             const mContentInput = document.getElementById('mContent');
             const adType = mAdTypeInput.value.trim();
-            const content = mContentInput.value.trim();
             if (!adType) { alert('El tipo de anuncio es obligatorio.'); return; }
-
-            const fileInputs = document.querySelectorAll('.reference-file');
-            const files = Array.from(fileInputs).map(input => input.files[0]).filter(file => file);
+            const files = Array.from(document.querySelectorAll('.reference-file')).map(i => i.files[0]).filter(f => f);
             
             e.target.textContent = 'Subiendo...'; e.target.disabled = true;
-
             const referenceURLs = await Promise.all(files.map(file => uploadFile(file)));
-
             db.collection(`tasks_MARKETING`).add({
-                adType, content, done: false, urgent: false, orden: Date.now(),
-                references: referenceURLs,
+                adType: adType, content: mContentInput.value.trim(), done: false,
+                urgent: false, orden: Date.now(), references: referenceURLs,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             mAdTypeInput.value = ''; mContentInput.value = '';
@@ -246,25 +249,25 @@ document.addEventListener('DOMContentLoaded', () => {
             e.target.textContent = 'Añadir Anuncio'; e.target.disabled = false;
         }
         
-        // --- Eventos en la Lista de Tareas ---
+        // Acciones en la lista de tareas
         const taskItem = e.target.closest('.task-item');
         if (taskItem) {
             const taskId = taskItem.dataset.id;
             const collectionName = `tasks_${currentDepartment.toUpperCase()}`;
+            const docRef = db.collection(collectionName).doc(taskId);
+
             if (e.target.matches('.toggle-status')) {
-                const doc = await db.collection(collectionName).doc(taskId).get();
-                if (doc.exists) db.collection(collectionName).doc(taskId).update({ done: !doc.data().done });
+                const doc = await docRef.get();
+                if (doc.exists) docRef.update({ done: !doc.data().done });
             }
             if (e.target.matches('.delete-btn')) {
-                if (confirm('¿Eliminar?')) db.collection(collectionName).doc(taskId).delete();
+                if (confirm('¿Eliminar esta tarea?')) docRef.delete();
             }
-            // Aquí iría la lógica del botón de editar si lo tuviéramos
+            // Lógica para el botón de editar
         }
         
-        // --- Otros Eventos Globales ---
-        if (e.target === backBtn) {
-            showDashboard();
-        }
+        // Eventos Globales
+        if (e.target === backBtn) showDashboard();
         if (e.target.matches('.filter-btn')) {
             filterBar.querySelector('.active').classList.remove('active');
             e.target.classList.add('active');
@@ -272,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
             listenForTasks();
         }
     });
-
+    
     // --- INICIALIZACIÓN ---
     renderDashboard();
 });
