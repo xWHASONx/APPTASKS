@@ -35,7 +35,7 @@
                     <button id="add-task-btn">Añadir</button>
                 </div>
     
-                <!-- ===== INICIO DE SECCIÓN NUEVA PARA MARKETING ===== -->
+                <!-- Sección para Marketing con área para pegar imágenes -->
                 <div id="marketing-toolbar" style="display: none;">
                     <select id="m-ad-type">
                         <option value="" disabled selected>Tipo de anuncio...</option>
@@ -46,15 +46,19 @@
                         <option value="Otro">Otro</option>
                     </select>
                     <textarea id="m-content" placeholder="Contenido o Copy..."></textarea>
+                    
                     <div class="references-section">
-                        <label>Referencias (Máx 5):</label>
-                        <div id="references-container">
-                            <!-- Los inputs de archivo se añadirán aquí -->
+                        <label>Referencias (Pega hasta 5 imágenes aquí o haz clic para seleccionar):</label>
+                        <div id="paste-area" class="paste-area">
+                            <span>🖼️ Haz clic o pega tu imagen</span>
                         </div>
-                        <button id="add-reference-btn" type="button">Añadir Imagen +</button>
+                        <div id="previews-container" class="previews-container">
+                            <!-- Las vistas previas de las imágenes aparecerán aquí -->
+                        </div>
+                        <!-- Input de archivo oculto que usaremos para seleccionar archivos -->
+                        <input type="file" id="hidden-file-input" accept="image/*" style="display: none;" multiple>
                     </div>
                 </div>
-                <!-- ===== FIN DE SECCIÓN NUEVA PARA MARKETING ===== -->
             </div>
 
             <div class="filter-bar">
@@ -89,7 +93,6 @@
     <!-- Scripts de Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-    <!-- ===== SCRIPT DE STORAGE AÑADIDO ===== -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
     
     <!-- Librería SortableJS para Drag & Drop -->
