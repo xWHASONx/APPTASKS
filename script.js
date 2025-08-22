@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
         alert("Error de configuración de Firebase. Revisa la consola.");
     }
     const db = firebase.firestore();
-    const storage = firebase.storage(); // NUEVO: Inicializar Firebase Storage
+    const storage = firebase.storage();
 
     // --- ESTADO GLOBAL ---
     const departments = { 'TECH': '💻', 'VENTAS': '💰', 'MARKETING': '📈', 'RESERVAS': '📅', 'ADMINISTRATIVA': '🗂️' };
@@ -43,15 +43,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const backBtn = document.getElementById('back-to-dashboard');
     const filterBar = document.querySelector('.filter-bar');
     const searchBar = document.getElementById('search-bar');
-    // NUEVO: Elementos del formulario de Marketing
     const marketingToolbar = document.getElementById('marketing-toolbar');
     const mAdType = document.getElementById('m-ad-type');
     const mContent = document.getElementById('m-content');
     const referencesContainer = document.getElementById('references-container');
     const addReferenceBtn = document.getElementById('add-reference-btn');
-    // Modal de edición
     const editModal = document.getElementById('edit-modal');
-    // ... (resto de elementos del modal)
+    const editTaskId = document.getElementById('edit-task-id');
+    const editTaskName = document.getElementById('edit-task-name');
+    const editTaskDesc = document.getElementById('edit-task-desc');
+    const saveEditBtn = document.getElementById('save-edit-btn');
+    const cancelEditBtn = document.getElementById('cancel-edit-btn');
 
     // --- LÓGICA DE NAVEGACIÓN ---
     function showDashboard() {
@@ -69,17 +71,15 @@ document.addEventListener('DOMContentLoaded', () => {
         currentDepartment = department;
         departmentTitle.textContent = department;
 
-        // NUEVO: Mostrar/ocultar campos de Marketing
         if (department === 'MARKETING') {
             marketingToolbar.style.display = 'grid';
-            resetMarketingForm(); // Limpiar el formulario al entrar
+            resetMarketingForm();
         } else {
             marketingToolbar.style.display = 'none';
         }
-
         listenForTasks();
     }
-    
+
     // --- LÓGICA DE DATOS ---
     function listenForTasks() {
         if (!currentDepartment) return;
@@ -129,9 +129,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         tasksToRender.forEach(task => {
             const item = document.createElement('div');
-            // ... (código existente de creación de item)
+            item.className = 'task-item';
+            if (task.done) item.classList.add('done');
+            if (task.urgent) item.classList.add('urgent');
+            item.dataset.id = task.id;
 
-            // NUEVO: Lógica para renderizar campos de Marketing
             let marketingInfoHTML = '';
             if (currentDepartment === 'MARKETING') {
                 const adType = task.adType ? `<div class="task-extra-info"><strong>Tipo:</strong> ${task.adType}</div>` : '';
@@ -167,14 +169,40 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function renderDashboard() { /* ... (sin cambios) ... */ }
+    function renderDashboard() {
+        departmentsGrid.innerHTML = '';
+        for (const [name, icon] of Object.entries(departments)) {
+            const card = document.createElement('div');
+            card.className = 'dept-card';
+            card.addEventListener('click', () => showTasks(name));
+            card.innerHTML = `<div class="card-icon">${icon}</div><div class="card-name">${name}</div>`;
+            departmentsGrid.appendChild(card);
+        }
+    }
     
     // --- DRAG & DROP ---
-    // ... (sin cambios) ...
+    new Sortable(taskList, {
+        animation: 150,
+        handle: '.task-item',
+        ghostClass: 'sortable-ghost',
+        onEnd: saveOrder
+    });
+
+    function saveOrder() {
+        const items = taskList.querySelectorAll('.task-item');
+        const batch = db.batch();
+        const collectionName = `tasks_${currentDepartment.toUpperCase()}`;
+        items.forEach((item, index) => {
+            const docId = item.dataset.id;
+            if (docId) {
+                const docRef = db.collection(collectionName).doc(docId);
+                batch.update(docRef, { orden: Date.now() - index });
+            }
+        });
+        batch.commit().catch(err => console.error("Error al guardar orden: ", err));
+    }
 
     // --- EVENTOS ---
-    
-    // NUEVO: Evento para añadir campos de imagen en Marketing
     addReferenceBtn.addEventListener('click', () => {
         const fileInputs = referencesContainer.querySelectorAll('input[type="file"]');
         if (fileInputs.length < 5) {
@@ -187,12 +215,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // MODIFICADO: Lógica para añadir tarea
     addTaskBtn.addEventListener('click', async () => {
         const name = tNameInput.value.trim();
         const description = tDescInput.value.trim();
         if (!name) { alert('El nombre de la tarea es obligatorio.'); return; }
-        addTaskBtn.disabled = true; // Deshabilitar botón para evitar doble click
+        addTaskBtn.disabled = true;
         addTaskBtn.textContent = 'Añadiendo...';
 
         let taskData = {
@@ -204,11 +231,9 @@ document.addEventListener('DOMContentLoaded', () => {
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        // Si estamos en Marketing, procesamos los campos extra
         if (currentDepartment === 'MARKETING') {
             taskData.adType = mAdType.value;
             taskData.content = mContent.value.trim();
-
             const fileInputs = referencesContainer.querySelectorAll('input[type="file"]');
             const files = Array.from(fileInputs).map(input => input.files[0]).filter(Boolean);
 
@@ -216,28 +241,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 const uploadPromises = files.map(file => {
                     const filePath = `marketing_references/${Date.now()}_${file.name}`;
                     const fileRef = storage.ref(filePath);
-                    return fileRef.put(file).then(() => ({
-                        url: fileRef.getDownloadURL(),
+                    return fileRef.put(file).then(async () => ({
+                        url: await fileRef.getDownloadURL(),
                         path: filePath
                     }));
                 });
-                
                 const results = await Promise.all(uploadPromises);
-                taskData.referenciasUrls = await Promise.all(results.map(r => r.url));
+                taskData.referenciasUrls = results.map(r => r.url);
                 taskData.referenciasPaths = results.map(r => r.path);
             }
         }
         
-        // Añadir la tarea a Firestore
         try {
             await db.collection(`tasks_${currentDepartment.toUpperCase()}`).add(taskData);
-            // Limpiar formularios
             tNameInput.value = '';
             tDescInput.value = '';
             tUrgentCheckbox.checked = false;
-            if (currentDepartment === 'MARKETING') {
-                resetMarketingForm();
-            }
+            if (currentDepartment === 'MARKETING') resetMarketingForm();
         } catch (error) {
             console.error("Error al añadir la tarea:", error);
             alert("Hubo un error al guardar la tarea.");
@@ -247,7 +267,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // MODIFICADO: Lógica de clics en la lista de tareas
     taskList.addEventListener('click', async (e) => {
         const taskItem = e.target.closest('.task-item');
         if (!taskItem) return;
@@ -258,10 +277,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!doc.exists) return;
         const taskData = doc.data();
 
-        // Si se marca/desmarca una tarea
         if (e.target.matches('.toggle-status')) {
             const isCompleting = !taskData.done;
-            // Si estamos en Marketing y se está completando una tarea con imágenes
             if (currentDepartment === 'MARKETING' && isCompleting && taskData.referenciasPaths) {
                 const deletePromises = taskData.referenciasPaths.map(path => storage.ref(path).delete());
                 try {
@@ -273,10 +290,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             docRef.update({ done: isCompleting });
         }
-        // Si se elimina una tarea
         if (e.target.matches('.delete-btn')) {
             if (confirm('¿Eliminar esta tarea permanentemente?')) {
-                // Si estamos en Marketing y la tarea tiene imágenes
                 if (currentDepartment === 'MARKETING' && taskData.referenciasPaths) {
                      const deletePromises = taskData.referenciasPaths.map(path => storage.ref(path).delete());
                      try {
@@ -289,7 +304,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 docRef.delete();
             }
         }
-        // Si se edita una tarea
         if (e.target.matches('.edit-btn')) {
             openEditModal({ id: doc.id, ...taskData });
         }
@@ -298,39 +312,67 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetMarketingForm() {
         mAdType.value = '';
         mContent.value = '';
-        referencesContainer.innerHTML = ''; // Limpia los inputs de archivo
+        referencesContainer.innerHTML = '';
+    }
+    
+    function openEditModal(task) {
+        editTaskId.value = task.id;
+        editTaskName.value = task.name;
+        editTaskDesc.value = task.description || '';
+        editModal.style.display = 'flex';
+    }
+    function closeEditModal() {
+        editModal.style.display = 'none';
+    }
+    
+    saveEditBtn.addEventListener('click', () => {
+        const id = editTaskId.value;
+        const newName = editTaskName.value.trim();
+        const newDesc = editTaskDesc.value.trim();
+        if (!newName) { alert('El nombre no puede estar vacío.'); return; }
+        
+        db.collection(`tasks_${currentDepartment.toUpperCase()}`).doc(id).update({
+            name: newName,
+            description: newDesc
+        });
+        closeEditModal();
+    });
+
+    cancelEditBtn.addEventListener('click', closeEditModal);
+    backBtn.addEventListener('click', showDashboard);
+
+    filterBar.addEventListener('click', e => {
+        if (e.target.matches('.filter-btn')) {
+            filterBar.querySelector('.active').classList.remove('active');
+            e.target.classList.add('active');
+            currentFilter = e.target.dataset.filter;
+            renderTasks();
+        }
+    });
+
+    searchBar.addEventListener('input', (e) => {
+        searchTerm = e.target.value.trim().toLowerCase();
+        renderTasks();
+    });
+    
+    function requestNotificationPermission() {
+        if (!("Notification" in window)) {
+            console.log("Este navegador no soporta notificaciones de escritorio.");
+        } else if (Notification.permission !== "denied") {
+            Notification.requestPermission();
+        }
     }
 
-    // ... (resto de funciones sin cambios: openEditModal, closeEditModal, saveEditBtn, etc.)
-    // ... (lógica de búsqueda y notificaciones sin cambios)
+    function showNotification(body) {
+        if (Notification.permission === "granted") {
+            new Notification("Gestor de Tareas", {
+                body: body,
+                icon: "https://i.imgur.com/g626kGO.png"
+            });
+        }
+    }
 
     // --- INICIALIZACIÓN ---
     renderDashboard();
     requestNotificationPermission();
-
-    // --- COPIAR AQUÍ LAS FUNCIONES QUE FALTAN DEL SCRIPT ANTERIOR ---
-    // (Asegúrate de que estas funciones estén presentes y completas)
-    function openEditModal(task) {
-        // ...
-    }
-    function closeEditModal() {
-        // ...
-    }
-    saveEditBtn.addEventListener('click', () => {
-        // ...
-    });
-    cancelEditBtn.addEventListener('click', closeEditModal);
-    backBtn.addEventListener('click', showDashboard);
-    filterBar.addEventListener('click', (e) => {
-        // ...
-    });
-    searchBar.addEventListener('input', (e) => {
-        // ...
-    });
-    function requestNotificationPermission() {
-        // ...
-    }
-    function showNotification(body) {
-        // ...
-    }
 });
