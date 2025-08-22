@@ -1,15 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- CONFIGURACIÓN DE FIREBASE ---
-    // ¡¡ASEGÚRATE DE PEGAR AQUÍ LAS CLAVES DE TU PROYECTO 'gestor-tareas-7a86a'!!
-    const firebaseConfig = {
-        apiKey: "AIzaSy...",
-        authDomain: "tu-proyecto.firebaseapp.com",
-        projectId: "tu-proyecto",
-        storageBucket: "tu-proyecto.appspot.com",
-        messagingSenderId: "...",
-        appId: "..."
-    };
+// ¡¡ASEGÚRATE DE PEGAR AQUÍ LAS CLAVES DE TU PROYECTO 'gestor-tareas-7a86a'!!
+const firebaseConfig = {
+    apiKey: "AIzaSyCTeN6rZV5Fr3KY3zpUi6lH5YLhNmoEjh4",
+    authDomain: "gestor-tareas-7a86a.firebaseapp.com",
+    projectId: "gestor-tareas-7a86a",
+    storageBucket: "gestor-tareas-7a86a.appspot.com",
+    messagingSenderId: "504609983937",
+    appId: "1:504609983937:web:151da729026e7839637340"
+};
 
     // --- INICIALIZACIÓN DE SERVICIOS ---
     try {
