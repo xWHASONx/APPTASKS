@@ -24,14 +24,37 @@
                 <h1 id="department-title"></h1>
             </header>
 
-            <div class="toolbar">
-                <input id="tName" placeholder="Nombre de la tarea...">
-                <input id="tDesc" placeholder="Descripción (opcional)...">
-                <div class="urgent-wrapper">
-                    <input type="checkbox" id="tUrgent" title="Marcar como urgente">
-                    <label for="tUrgent">🔥</label>
+            <div class="toolbar-wrapper">
+                <div class="toolbar">
+                    <input id="tName" placeholder="Nombre de la tarea...">
+                    <input id="tDesc" placeholder="Descripción (opcional)...">
+                    <div class="urgent-wrapper">
+                        <input type="checkbox" id="tUrgent" title="Marcar como urgente">
+                        <label for="tUrgent">🔥</label>
+                    </div>
+                    <button id="add-task-btn">Añadir</button>
                 </div>
-                <button id="add-task-btn">Añadir</button>
+    
+                <!-- ===== INICIO DE SECCIÓN NUEVA PARA MARKETING ===== -->
+                <div id="marketing-toolbar" style="display: none;">
+                    <select id="m-ad-type">
+                        <option value="" disabled selected>Tipo de anuncio...</option>
+                        <option value="Campaña RRSS">Campaña RRSS</option>
+                        <option value="Google Ads">Google Ads</option>
+                        <option value="Email Marketing">Email Marketing</option>
+                        <option value="Contenido Blog">Contenido Blog</option>
+                        <option value="Otro">Otro</option>
+                    </select>
+                    <textarea id="m-content" placeholder="Contenido o Copy..."></textarea>
+                    <div class="references-section">
+                        <label>Referencias (Máx 5):</label>
+                        <div id="references-container">
+                            <!-- Los inputs de archivo se añadirán aquí -->
+                        </div>
+                        <button id="add-reference-btn" type="button">Añadir Imagen +</button>
+                    </div>
+                </div>
+                <!-- ===== FIN DE SECCIÓN NUEVA PARA MARKETING ===== -->
             </div>
 
             <div class="filter-bar">
@@ -66,6 +89,8 @@
     <!-- Scripts de Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <!-- ===== SCRIPT DE STORAGE AÑADIDO ===== -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage-compat.js"></script>
     
     <!-- Librería SortableJS para Drag & Drop -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
