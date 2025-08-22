@@ -1,3 +1,4 @@
+// --- INICIO DEL ARCHIVO SCRIPT.JS ---
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- CONFIGURACIÓN DE FIREBASE ---
@@ -48,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const mContent = document.getElementById('m-content');
     const referencesContainer = document.getElementById('references-container');
     const addReferenceBtn = document.getElementById('add-reference-btn');
+    // Modal de edición
     const editModal = document.getElementById('edit-modal');
     const editTaskId = document.getElementById('edit-task-id');
     const editTaskName = document.getElementById('edit-task-name');
@@ -376,3 +378,4 @@ document.addEventListener('DOMContentLoaded', () => {
     renderDashboard();
     requestNotificationPermission();
 });
+// --- FIN DEL ARCHIVO SCRIPT.JS ---
