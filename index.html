@@ -4,11 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestor de Tareas</title>
+
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tu Hoja de Estilos -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- Pantalla de Selección de Departamento -->
+    <!-- ======================================== -->
+    <!-- Pantalla de Selección de Departamento    -->
+    <!-- ======================================== -->
     <div id="dashboard-view" class="view active">
         <div class="container">
             <h1>Selecciona tu Departamento</h1>
@@ -16,7 +25,9 @@
         </div>
     </div>
 
-    <!-- Pantalla de Tareas -->
+    <!-- ======================================== -->
+    <!-- Pantalla de Tareas                     -->
+    <!-- ======================================== -->
     <div id="tasks-view" class="view">
         <div class="container">
             <header>
@@ -25,6 +36,7 @@
             </header>
 
             <div class="toolbar-wrapper">
+                <!-- Toolbar General -->
                 <div class="toolbar">
                     <input id="tName" placeholder="Nombre de la tarea...">
                     <input id="tDesc" placeholder="Descripción (opcional)...">
@@ -35,7 +47,7 @@
                     <button id="add-task-btn">Añadir</button>
                 </div>
     
-                <!-- Sección para Marketing con área para pegar imágenes -->
+                <!-- Toolbar Específica para Marketing (oculta por defecto) -->
                 <div id="marketing-toolbar" style="display: none;">
                     <select id="m-ad-type">
                         <option value="" disabled selected>Tipo de anuncio...</option>
@@ -61,6 +73,7 @@
                 </div>
             </div>
 
+            <!-- Filtros y Búsqueda -->
             <div class="filter-bar">
                 <button class="filter-btn active" data-filter="pending">Pendientes</button>
                 <button class="filter-btn" data-filter="completed">Completadas</button>
@@ -70,13 +83,16 @@
                 <input type="search" id="search-bar" placeholder="🔎 Buscar tareas por nombre o descripción...">
             </div>
 
+            <!-- Lista de Tareas -->
             <div class="list" id="task-list">
                 <!-- Las tareas se renderizarán aquí -->
             </div>
         </div>
     </div>
 
-    <!-- Modal para Editar Tarea -->
+    <!-- ======================================== -->
+    <!-- Modal para Editar Tarea                -->
+    <!-- ======================================== -->
     <div id="edit-modal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
             <h2>Editar Tarea</h2>
@@ -90,6 +106,10 @@
         </div>
     </div>
     
+    <!-- ======================================== -->
+    <!-- Scripts                                -->
+    <!-- ======================================== -->
+
     <!-- Scripts de Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
@@ -98,7 +118,7 @@
     <!-- Librería SortableJS para Drag & Drop -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     
-    <!-- Tu Script -->
+    <!-- Tu Script Principal -->
     <script src="script.js"></script>
 </body>
 </html>
